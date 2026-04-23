@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A4 Live Sync</title>
+    <style>
+        body { font-family: 'Times New Roman', serif; margin: 0; padding: 20px; background: #e5e5e5; text-align: center; }
+        .container { max-width: 900px; margin: auto; }
+        textarea { width: 100%; height: 150px; padding: 10px; font-family: monospace; border: 1px solid #999; border-radius: 5px; }
+        .controls { margin: 15px 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        button { padding: 10px 20px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; color: white; }
+        .btn-save { background: #2ecc71; }
+        .btn-delete { background: #e74c3c; }
+        .btn-copy { background: #3498db; }
+        .output { 
+            background: white; padding: 40px; width: 793px; min-height: 1122px; 
+            border: 1px solid black; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.25); 
+            box-sizing: border-box; text-align: left;
+        }
+        .output * { font-family: 'Times New Roman', serif !important; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>A4 Real-Time Viewer</h2>
+    <textarea id="input" placeholder="Tempel HTML surat di sini..."></textarea>
+
+    <div class="controls">
+        <button class="btn-save" onclick="saveData()">Tampilkan & Simpan (HP A)</button>
+        <button class="btn-delete" onclick="clearData()">Hapus Proyek</button>
+        <button class="btn-copy" onclick="copyResult()">Salin ke Word</button>
+    </div>
+
+    <div id="output" class="output">Menunggu data...</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyC4ey5KDMdta67e9iKTqfLUeggIDMRDxt0",
+    authDomain: "a4-viewer.firebaseapp.com",
+    databaseURL: "https://a4-viewer-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "a4-viewer",
+    storageBucket: "a4-viewer.firebasestorage.app",
+    messagingSenderId: "822295242853",
+    appId: "1:822295242853:web:50db786a9a9913ebe9fe8c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const docRef = db.ref("shared_document");
+
+// 1. HP B (atau siapapun) bakal dapet update OTOMATIS setiap ada perubahan di database
+docRef.on("value", (snapshot) => {
+    const data = snapshot.val();
+    if (data && data.content) {
+        document.getElementById("output").innerHTML = data.content;
+        // Opsional: isi textarea HP A dengan data lama kalau baru buka
+        if(!document.activeElement.isSameNode(document.getElementById('input'))) {
+            document.getElementById('input').value = data.content;
+        }
+    } else {
+        document.getElementById("output").innerHTML = "Kosong. Masukkan HTML di HP A.";
+    }
+});
+
+// 2. Fungsi HP A Simpan data
+function saveData() {
+    const content = document.getElementById("input").value;
+    if (!content) return alert("Isi HTML dulu!");
+    
+    docRef.set({ content: content })
+    .then(() => alert("Tersimpan & Terkirim ke semua device!"))
+    .catch(err => console.error(err));
+}
+
+// 3. Fungsi Hapus Data (Reset)
+function clearData() {
+    if(confirm("Hapus data di semua device?")) {
+        docRef.remove();
+        document.getElementById("input").value = "";
+    }
+}
+
+// 4. Salin Hasil
+function copyResult() {
+    const output = document.getElementById('output');
+    const range = document.createRange();
+    range.selectNode(output);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand("copy");
+    alert("Berhasil disalin! Tinggal Paste di Word.");
+}
+</script>
+
+</body>
+</html>
